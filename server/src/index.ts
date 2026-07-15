@@ -2,6 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { env } from './config/env';
 import prisma from './config/database';
 import authRoutes from './routes/authRoutes';
@@ -41,6 +43,14 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
 
 setupSocketIO(io);
+
+const publicDir = path.join(__dirname, '..', 'public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+}
 
 async function main() {
   try {

@@ -1,0 +1,12 @@
+{
+  "name": "watch-together",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SyncWatch - watch-together platform (video sync, chat, voice)",
+  "scripts": {
+    "build:client": "cd client && npm install && npm run build",
+    "build:server": "cd server && npm install && npm run build && npx prisma generate",
+    "build": "npm run build:client && npm run build:server && node scripts/copy-client.mjs",
+    "start": "cd server && npm start"
+  }
+}
