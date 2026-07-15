@@ -128,8 +128,10 @@ export function useVideoSync({ videoRef, roomCode, hasVideo, userId }: UseVideoS
       lastReceivedTime.current = data.currentTime;
       if (Date.now() - lastSeekAt.current < SEEK_GUARD_MS) return;
       if (video.paused || !video.duration) return;
-      const drift = Math.abs(video.currentTime - data.currentTime);
-      if (drift > SYNC_TOLERANCE) {
+      // Only correct drift FORWARD (when we're behind). Seeking backward to a
+      // peer's value that is up to one interval stale would rewind playback.
+      const behind = data.currentTime - video.currentTime;
+      if (behind > SYNC_TOLERANCE) {
         setIsSyncing(true);
         withSuppression(() => {
           video.currentTime = data.currentTime;
