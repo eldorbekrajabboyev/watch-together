@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/database';
+import { env } from '../config/env';
 
 const registerSchema = z.object({
   nickname: z.string().min(2).max(30),
@@ -22,7 +23,7 @@ const updateProfileSchema = z.object({
 });
 
 function generateToken(userId: string): string {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || 'secret', {
+  return jwt.sign({ userId }, env.JWT_SECRET, {
     expiresIn: '7d',
   });
 }
