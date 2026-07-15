@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  nickname      String
+  avatar        String?
+  email         String?   @unique
+  passwordHash  String?
+  isAdmin       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  hostedRooms  Room[]
+  participants Participant[]
+  messages     Message[]
+
+  @@map("users")
+}
+
+model Room {
+  id              String         @id @default(cuid())
+  code            String         @unique
+  title           String
+  hostId          String
+  password        String?
+  isActive        Boolean        @default(true)
+  isPasswordProtected Boolean   @default(false)
+  maxParticipants Int            @default(10)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  host         User          @relation(fields: [hostId], references: [id])
+  settings     RoomSettings?
+  participants Participant[]
+  messages     Message[]
+
+  @@index([code])
+  @@map("rooms")
+}
+
+model RoomSettings {
+  id                  String  @id @default(cuid())
+  roomId              String  @unique
+  hostOnlyControl     Boolean @default(true)
+  voiceEnabled        Boolean @default(true)
+  chatEnabled         Boolean @default(true)
+  autoSync            Boolean @default(true)
+  isPasswordProtected Boolean @default(false)
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("room_settings")
+}
+
+model Participant {
+  id         String   @id @default(cuid())
+  userId     String
+  roomId     String
+  role       String   @default("guest")
+  isReady    Boolean  @default(false)
+  isMuted    Boolean  @default(false)
+  isSpeaking Boolean  @default(false)
+  isConnected Boolean @default(true)
+  joinedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roomId])
+  @@map("participants")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  content     String
+  type        String   @default("text")
+  replyToId   String?
+  isEdited    Boolean  @default(false)
+  isDeleted   Boolean  @default(false)
+  userId      String
+  roomId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User  @relation(fields: [userId], references: [id])
+  room    Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  replyTo Message? @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies Message[] @relation("MessageReplies")
+
+  @@map("messages")
+}

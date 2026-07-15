@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: syncwatch-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-syncwatch}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-syncwatch_secret}
+      POSTGRES_DB: ${DB_NAME:-syncwatch}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-syncwatch}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: syncwatch-server
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3001}:3001'
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${DB_USER:-syncwatch}:${DB_PASSWORD:-syncwatch_secret}@postgres:5432/${DB_NAME:-syncwatch}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: syncwatch-client
+    restart: unless-stopped
+    ports:
+      - '${VITE_PORT:-5173}:80'
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
